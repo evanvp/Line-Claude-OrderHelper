@@ -4,7 +4,12 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const Anthropic = require('@anthropic-ai/sdk');
-const { insertRawMessage, insertOrder } = require('./db');
+const {
+  insertRawMessage, insertOrder,
+  getOrders, getFilterOptions,
+  updateOrderItem, toggleShipped,
+  getUnrecognized,
+} = require('./db');
 
 const app = express();
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -20,10 +25,9 @@ function verifySignature(body, signature) {
 }
 
 async function lineGet(url) {
-  const res = await fetch(url, {
+  return fetch(url, {
     headers: { Authorization: `Bearer ${process.env.LINE_CHANNEL_ACCESS_TOKEN}` },
   });
-  return res;
 }
 
 async function getGroupName(groupId) {
@@ -33,9 +37,7 @@ async function getGroupName(groupId) {
     if (!res.ok) return groupId;
     const data = await res.json();
     return data.groupName || groupId;
-  } catch {
-    return groupId;
-  }
+  } catch { return groupId; }
 }
 
 async function getDisplayName(userId, groupId) {
@@ -47,9 +49,7 @@ async function getDisplayName(userId, groupId) {
     if (!res.ok) return userId;
     const data = await res.json();
     return data.displayName || userId;
-  } catch {
-    return userId;
-  }
+  } catch { return userId; }
 }
 
 async function downloadImage(messageId) {
@@ -58,49 +58,37 @@ async function downloadImage(messageId) {
   const imgDir = path.join(__dirname, 'images');
   if (!fs.existsSync(imgDir)) fs.mkdirSync(imgDir);
   const filePath = path.join(imgDir, `${messageId}.jpg`);
-  const buffer = Buffer.from(await res.arrayBuffer());
-  fs.writeFileSync(filePath, buffer);
+  fs.writeFileSync(filePath, Buffer.from(await res.arrayBuffer()));
   return filePath;
 }
 
 // --- Claude helpers ---
 
 async function analyzeText(text) {
-  const prompt = `你是一個訂單資訊擷取助理。請判斷以下訊息是否包含購買訂單意圖。
-
-如果包含訂單，請回傳 JSON 陣列，每個商品一個物件：
-[
-  { "product": "商品名稱", "quantity": "數量（純數字）", "price": "單價（純數字，若無則填 0）" }
-]
-
-如果完全不是訂單，只回傳：
-[]
-
-訊息：${text}
-
-只回傳 JSON，不要加其他說明。`;
-
   const response = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 512,
-    messages: [{ role: 'user', content: prompt }],
-  });
+    messages: [{
+      role: 'user',
+      content: `你是一個訂單資訊擷取助理。請判斷以下訊息是否包含購買訂單意圖。
 
-  const raw = response.content[0].text.trim();
-  const match = raw.match(/\[[\s\S]*\]/);
+如果包含訂單，請回傳 JSON 陣列，每個商品一個物件：
+[{ "product": "商品名稱", "quantity": "數量（純數字）", "price": "單價（純數字，若無則填 0）" }]
+
+如果不是訂單，只回傳：[]
+
+訊息：${text}
+
+只回傳 JSON，不要加其他說明。`,
+    }],
+  });
+  const match = response.content[0].text.trim().match(/\[[\s\S]*\]/);
   if (!match) return [];
-  return JSON.parse(match[0]);
+  try { return JSON.parse(match[0]); } catch { return []; }
 }
 
 async function analyzeImage(imagePath) {
   const imageData = fs.readFileSync(imagePath).toString('base64');
-  const prompt = `這是一張訂單圖片（可能是手寫）。請擷取所有訂單項目，回傳 JSON 陣列：
-[
-  { "product": "商品名稱", "quantity": "數量（純數字）", "price": "單價（純數字，若無則填 0）" }
-]
-
-若圖片沒有訂單資訊，回傳 []。只回傳 JSON，不要加其他說明。`;
-
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 512,
@@ -108,15 +96,16 @@ async function analyzeImage(imagePath) {
       role: 'user',
       content: [
         { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: imageData } },
-        { type: 'text', text: prompt },
+        { type: 'text', text: `這是一張訂單圖片（可能是手寫）。請擷取所有訂單項目，回傳 JSON 陣列：
+[{ "product": "商品名稱", "quantity": "數量（純數字）", "price": "單價（純數字，若無則填 0）" }]
+
+若圖片沒有訂單資訊，回傳 []。只回傳 JSON，不要加其他說明。` },
       ],
     }],
   });
-
-  const raw = response.content[0].text.trim();
-  const match = raw.match(/\[[\s\S]*\]/);
+  const match = response.content[0].text.trim().match(/\[[\s\S]*\]/);
   if (!match) return [];
-  return JSON.parse(match[0]);
+  try { return JSON.parse(match[0]); } catch { return []; }
 }
 
 // --- Webhook ---
@@ -129,19 +118,13 @@ app.post('/webhook', async (req, res) => {
     console.warn('簽名驗證失敗，忽略此請求。');
     return res.sendStatus(401);
   }
-
   res.sendStatus(200);
 
   let body;
-  try {
-    body = JSON.parse(req.body.toString());
-  } catch {
-    return;
-  }
+  try { body = JSON.parse(req.body.toString()); } catch { return; }
 
   for (const event of body.events || []) {
     if (event.type !== 'message') continue;
-
     const msgType = event.message.type;
     if (msgType !== 'text' && msgType !== 'image') continue;
 
@@ -158,21 +141,12 @@ app.post('/webhook', async (req, res) => {
 
     if (msgType === 'text') {
       const text = event.message.text;
-      rawId = insertRawMessage({
-        createdAt: now, groupId, groupName,
-        userId, userName: displayName,
-        type: 'text', content: text, imagePath: null,
-      });
+      rawId = insertRawMessage({ createdAt: now, groupId, groupName, userId, userName: displayName, type: 'text', content: text, imagePath: null });
       console.log(`[訊息] ${groupName} / ${displayName}：${text}`);
       items = await analyzeText(text);
-
     } else {
       const imagePath = await downloadImage(event.message.id);
-      rawId = insertRawMessage({
-        createdAt: now, groupId, groupName,
-        userId, userName: displayName,
-        type: 'image', content: null, imagePath,
-      });
+      rawId = insertRawMessage({ createdAt: now, groupId, groupName, userId, userName: displayName, type: 'image', content: null, imagePath });
       console.log(`[圖片] ${groupName} / ${displayName} → ${imagePath}`);
       items = imagePath ? await analyzeImage(imagePath) : [];
     }
@@ -182,37 +156,44 @@ app.post('/webhook', async (req, res) => {
       continue;
     }
 
-    console.log(`已偵測到潛在訂單，正在寫入資料庫... (${items.length} 項)`);
-    for (const item of items) {
-      insertOrder({
-        createdAt: now, groupName, customer: displayName,
-        product: item.product, quantity: item.quantity, price: item.price,
-        rawMessageId: rawId,
-      });
-      console.log(`  -> 已寫入：${item.product} x${item.quantity}`);
-    }
+    const orderNo = insertOrder({ createdAt: now, groupName, customer: displayName, items, rawMessageId: rawId });
+    console.log(`  -> 訂單 ${orderNo} 已建立（${items.length} 項商品）`);
   }
 });
 
-// --- API 端點（前端使用）---
+// --- REST API ---
 
-app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
+app.use('/images', express.static(path.join(__dirname, 'images')));
+app.use(express.static(path.join(__dirname, 'public')));
 
-app.get('/api/orders', (_req, res) => {
-  const { search, from, to } = _req.query;
-  const { getOrders } = require('./db');
-  res.json(getOrders({ search, from, to }));
+app.get('/api/orders', (req, res) => {
+  const { search, from, to, customer, groupName } = req.query;
+  res.json(getOrders({ search, from, to, customer, groupName }));
+});
+
+app.get('/api/filters', (_req, res) => {
+  res.json(getFilterOptions());
+});
+
+app.put('/api/order-items/:id', (req, res) => {
+  const { product, quantity } = req.body;
+  updateOrderItem(Number(req.params.id), { product, quantity });
+  res.json({ ok: true });
+});
+
+app.patch('/api/orders/:id/shipped', (req, res) => {
+  toggleShipped(Number(req.params.id));
+  res.json({ ok: true });
 });
 
 app.get('/api/unrecognized', (_req, res) => {
-  const { getUnrecognized } = require('./db');
   res.json(getUnrecognized());
 });
 
-// --- 啟動 ---
-
 app.get('/', (_req, res) => res.redirect('/index.html'));
+
+// --- 啟動 ---
 
 const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {

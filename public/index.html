@@ -16,7 +16,7 @@
     }
     header h1 { font-size: 20px; font-weight: 600; }
 
-    nav { display: flex; gap: 0; padding: 0 24px; background: white; border-bottom: 1px solid #e0e0e0; }
+    nav { display: flex; padding: 0 24px; background: white; border-bottom: 1px solid #e0e0e0; }
     nav button {
       padding: 12px 20px; border: none; background: none; cursor: pointer;
       font-size: 14px; color: #666; border-bottom: 3px solid transparent;
@@ -29,19 +29,21 @@
       display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: flex-end;
     }
     .filters label { font-size: 12px; color: #888; display: flex; flex-direction: column; gap: 4px; }
-    .filters input {
+    .filters input, .filters select {
       padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px;
-      font-size: 14px; outline: none;
+      font-size: 14px; outline: none; background: white;
     }
-    .filters input:focus { border-color: #06c755; }
+    .filters input:focus, .filters select:focus { border-color: #06c755; }
     .btn {
       padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;
-      font-size: 14px; font-weight: 500;
+      font-size: 14px; font-weight: 500; white-space: nowrap;
     }
-    .btn-primary { background: #06c755; color: white; }
-    .btn-primary:hover { background: #00a041; }
-    .btn-outline { background: white; color: #06c755; border: 1px solid #06c755; }
-    .btn-outline:hover { background: #f0fdf4; }
+    .btn-primary  { background: #06c755; color: white; }
+    .btn-primary:hover  { background: #00a041; }
+    .btn-outline  { background: white; color: #06c755; border: 1px solid #06c755; }
+    .btn-outline:hover  { background: #f0fdf4; }
+    .btn-save     { background: #3b82f6; color: white; padding: 4px 10px; font-size: 12px; border-radius: 4px; }
+    .btn-cancel   { background: #e5e7eb; color: #555; padding: 4px 10px; font-size: 12px; border-radius: 4px; }
 
     .stats {
       display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -54,37 +56,88 @@
     .stat-card .num { font-size: 28px; font-weight: 700; color: #06c755; }
     .stat-card .label { font-size: 12px; color: #888; margin-top: 4px; }
 
-    table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
-    thead { background: #f8f9fa; }
-    th { padding: 12px 16px; text-align: left; font-size: 13px; color: #888; font-weight: 500; }
-    td { padding: 12px 16px; font-size: 14px; border-top: 1px solid #f0f0f0; }
-    tr:hover td { background: #fafffe; }
+    /* Order cards */
+    .order-card {
+      background: white; border-radius: 10px; margin-bottom: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08); overflow: hidden;
+    }
+    .order-header {
+      display: flex; align-items: center; gap: 12px; padding: 14px 18px;
+      cursor: pointer; user-select: none;
+    }
+    .order-header:hover { background: #fafffe; }
+    .order-header .chevron { font-size: 12px; color: #aaa; transition: transform 0.2s; flex-shrink: 0; }
+    .order-card.open .chevron { transform: rotate(90deg); }
+    .order-no { font-weight: 600; font-size: 14px; color: #06c755; min-width: 160px; }
+    .order-meta { display: flex; gap: 10px; flex-wrap: wrap; flex: 1; }
+    .order-date { font-size: 13px; color: #888; }
+    .shipped-toggle { display: flex; align-items: center; gap: 6px; cursor: pointer; margin-left: auto; flex-shrink: 0; }
+    .shipped-toggle input { width: 16px; height: 16px; accent-color: #06c755; cursor: pointer; }
+    .shipped-label { font-size: 13px; color: #888; }
+
+    .order-body { display: none; border-top: 1px solid #f0f0f0; padding: 0 18px 14px; }
+    .order-card.open .order-body { display: block; }
+
+    .raw-preview {
+      font-size: 13px; color: #888; padding: 10px 0 6px;
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .img-link {
+      color: #3b82f6; text-decoration: underline; font-size: 13px; cursor: pointer;
+    }
+
+    /* Items table inside card */
+    .items-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    .items-table th {
+      text-align: left; font-size: 12px; color: #aaa; font-weight: 500;
+      padding: 6px 10px; border-bottom: 1px solid #f0f0f0;
+    }
+    .items-table td { padding: 8px 10px; font-size: 14px; border-bottom: 1px solid #f8f8f8; }
+    .items-table tr:last-child td { border-bottom: none; }
+
+    .edit-input {
+      border: 1px solid #06c755; border-radius: 4px; padding: 3px 8px;
+      font-size: 14px; outline: none; width: 100%;
+    }
+    .edit-actions { display: flex; gap: 6px; }
 
     .badge {
       display: inline-block; padding: 2px 8px; border-radius: 12px;
       font-size: 12px; font-weight: 500;
     }
-    .badge-green { background: #dcfce7; color: #16a34a; }
-    .badge-gray  { background: #f3f4f6; color: #6b7280; }
-    .badge-blue  { background: #dbeafe; color: #1d4ed8; }
-
-    .raw-msg {
-      max-width: 200px; overflow: hidden; text-overflow: ellipsis;
-      white-space: nowrap; color: #888; font-size: 13px; cursor: pointer;
-    }
-    .raw-msg:hover { color: #333; white-space: normal; }
+    .badge-green  { background: #dcfce7; color: #16a34a; }
+    .badge-gray   { background: #f3f4f6; color: #6b7280; }
+    .badge-blue   { background: #dbeafe; color: #1d4ed8; }
+    .badge-orange { background: #fff7ed; color: #c2410c; }
 
     .empty { text-align: center; padding: 60px; color: #aaa; }
-    .empty svg { width: 48px; height: 48px; margin-bottom: 12px; }
-
     .page { display: none; }
     .page.active { display: block; }
+
+    /* Lightbox */
+    #lightbox {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.85); z-index: 1000;
+      align-items: center; justify-content: center;
+    }
+    #lightbox.show { display: flex; }
+    #lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 8px; }
+    #lightbox-close {
+      position: absolute; top: 20px; right: 24px;
+      color: white; font-size: 32px; cursor: pointer; line-height: 1;
+    }
+
+    /* Unrecognized table */
+    table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    thead { background: #f8f9fa; }
+    th { padding: 12px 16px; text-align: left; font-size: 13px; color: #888; font-weight: 500; }
+    td { padding: 12px 16px; font-size: 14px; border-top: 1px solid #f0f0f0; }
 
     #toast {
       position: fixed; bottom: 24px; right: 24px;
       background: #333; color: white; padding: 12px 20px;
       border-radius: 8px; font-size: 14px; opacity: 0;
-      transition: opacity 0.3s; pointer-events: none;
+      transition: opacity 0.3s; pointer-events: none; z-index: 2000;
     }
     #toast.show { opacity: 1; }
   </style>
@@ -108,12 +161,19 @@
     <div class="stats">
       <div class="stat-card"><div class="num" id="stat-total">-</div><div class="label">總訂單數</div></div>
       <div class="stat-card"><div class="num" id="stat-customers">-</div><div class="label">顧客人數</div></div>
-      <div class="stat-card"><div class="num" id="stat-products">-</div><div class="label">商品種類</div></div>
+      <div class="stat-card"><div class="num" id="stat-shipped">-</div><div class="label">已出貨</div></div>
+      <div class="stat-card"><div class="num" id="stat-pending">-</div><div class="label">待出貨</div></div>
     </div>
 
     <div class="filters">
-      <label>搜尋顧客 / 商品
-        <input type="text" id="search" placeholder="輸入關鍵字..." />
+      <label>搜尋
+        <input type="text" id="search" placeholder="顧客 / 訊息內容..." />
+      </label>
+      <label>顧客
+        <select id="filter-customer"><option value="">全部顧客</option></select>
+      </label>
+      <label>群組
+        <select id="filter-group"><option value="">全部群組</option></select>
       </label>
       <label>開始日期
         <input type="date" id="from" />
@@ -125,22 +185,7 @@
       <button class="btn btn-outline" onclick="clearFilters()">清除</button>
     </div>
 
-    <table>
-      <thead>
-        <tr>
-          <th>日期</th>
-          <th>群組</th>
-          <th>顧客</th>
-          <th>商品</th>
-          <th>數量</th>
-          <th>單價</th>
-          <th>原始訊息</th>
-        </tr>
-      </thead>
-      <tbody id="orders-body">
-        <tr><td colspan="7" class="empty">載入中...</td></tr>
-      </tbody>
-    </table>
+    <div id="orders-list"><div class="empty">載入中...</div></div>
   </div>
 
   <!-- 未辨識訊息 -->
@@ -148,13 +193,7 @@
     <p style="color:#888; margin-bottom:16px; font-size:14px;">以下訊息 Claude 未判斷為訂單，請人工確認是否有漏單。</p>
     <table>
       <thead>
-        <tr>
-          <th>日期</th>
-          <th>群組</th>
-          <th>發話者</th>
-          <th>類型</th>
-          <th>內容</th>
-        </tr>
+        <tr><th>日期</th><th>群組</th><th>發話者</th><th>類型</th><th>內容</th></tr>
       </thead>
       <tbody id="unrecognized-body">
         <tr><td colspan="5" class="empty">載入中...</td></tr>
@@ -164,9 +203,18 @@
 
 </div>
 
+<!-- Lightbox -->
+<div id="lightbox" onclick="closeLightbox()">
+  <span id="lightbox-close">&times;</span>
+  <img id="lightbox-img" src="" alt="訂單圖片" onclick="event.stopPropagation()" />
+</div>
+
 <div id="toast"></div>
 
 <script>
+  let editingItemId = null;
+
+  // --- Tab switch ---
   function switchTab(id, btn) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
@@ -176,6 +224,7 @@
     else loadOrders();
   }
 
+  // --- Toast ---
   function showToast(msg) {
     const t = document.getElementById('toast');
     t.textContent = msg;
@@ -183,51 +232,136 @@
     setTimeout(() => t.classList.remove('show'), 2500);
   }
 
+  // --- Lightbox ---
+  function openLightbox(src) {
+    document.getElementById('lightbox-img').src = src;
+    document.getElementById('lightbox').classList.add('show');
+  }
+  function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('show');
+  }
+
+  // --- Filters ---
+  async function loadFilterOptions() {
+    const res  = await fetch('/api/filters');
+    const data = await res.json();
+    const custSel  = document.getElementById('filter-customer');
+    const groupSel = document.getElementById('filter-group');
+    custSel.innerHTML  = '<option value="">全部顧客</option>'  + data.customers.map(c  => `<option>${c}</option>`).join('');
+    groupSel.innerHTML = '<option value="">全部群組</option>' + data.groupNames.map(g => `<option>${g}</option>`).join('');
+  }
+
   function clearFilters() {
-    document.getElementById('search').value = '';
-    document.getElementById('from').value = '';
-    document.getElementById('to').value = '';
+    ['search','from','to'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('filter-customer').value = '';
+    document.getElementById('filter-group').value = '';
     loadOrders();
   }
 
+  // --- Load orders ---
   async function loadOrders() {
-    const search = document.getElementById('search').value;
-    const from   = document.getElementById('from').value;
-    const to     = document.getElementById('to').value;
     const params = new URLSearchParams();
-    if (search) params.set('search', search);
-    if (from)   params.set('from', from);
-    if (to)     params.set('to', to);
+    const search   = document.getElementById('search').value;
+    const from     = document.getElementById('from').value;
+    const to       = document.getElementById('to').value;
+    const customer = document.getElementById('filter-customer').value;
+    const group    = document.getElementById('filter-group').value;
+    if (search)   params.set('search', search);
+    if (from)     params.set('from', from);
+    if (to)       params.set('to', to);
+    if (customer) params.set('customer', customer);
+    if (group)    params.set('groupName', group);
 
     const res  = await fetch('/api/orders?' + params);
     const data = await res.json();
 
-    const tbody = document.getElementById('orders-body');
-    if (!data.length) {
-      tbody.innerHTML = '<tr><td colspan="7" class="empty">目前沒有訂單資料</td></tr>';
-      document.getElementById('stat-total').textContent = 0;
-      document.getElementById('stat-customers').textContent = 0;
-      document.getElementById('stat-products').textContent = 0;
-      return;
-    }
-
-    document.getElementById('stat-total').textContent = data.length;
+    document.getElementById('stat-total').textContent     = data.length;
     document.getElementById('stat-customers').textContent = new Set(data.map(r => r.customer)).size;
-    document.getElementById('stat-products').textContent = new Set(data.map(r => r.product)).size;
+    document.getElementById('stat-shipped').textContent   = data.filter(r => r.shipped).length;
+    document.getElementById('stat-pending').textContent   = data.filter(r => !r.shipped).length;
 
-    tbody.innerHTML = data.map(r => `
-      <tr>
-        <td>${r.created_at}</td>
-        <td><span class="badge badge-blue">${r.group_name || '-'}</span></td>
-        <td>${r.customer || '-'}</td>
-        <td>${r.product || '-'}</td>
-        <td>${r.quantity || '-'}</td>
-        <td>${r.price > 0 ? '$' + r.price : '-'}</td>
-        <td><span class="raw-msg" title="${(r.raw_content || '').replace(/"/g, '&quot;')}">${r.raw_content || '[圖片]'}</span></td>
-      </tr>
+    const list = document.getElementById('orders-list');
+    if (!data.length) { list.innerHTML = '<div class="empty">目前沒有訂單資料</div>'; return; }
+
+    list.innerHTML = data.map(order => `
+      <div class="order-card" id="card-${order.id}">
+        <div class="order-header" onclick="toggleCard(${order.id})">
+          <span class="chevron">▶</span>
+          <span class="order-no">${order.order_no}</span>
+          <div class="order-meta">
+            <span class="badge badge-blue">${order.group_name || '個人'}</span>
+            <span class="badge badge-gray">${order.customer || '-'}</span>
+            <span class="order-date">${order.created_at}</span>
+          </div>
+          <label class="shipped-toggle" onclick="event.stopPropagation()">
+            <input type="checkbox" ${order.shipped ? 'checked' : ''} onchange="toggleShipped(${order.id}, this)" />
+            <span class="shipped-label ${order.shipped ? 'badge badge-green' : 'badge badge-orange'}">${order.shipped ? '已出貨' : '待出貨'}</span>
+          </label>
+        </div>
+        <div class="order-body">
+          <div class="raw-preview">
+            <span style="color:#bbb">原始訊息：</span>
+            ${order.msg_type === 'image' && order.image_path
+              ? `<span class="img-link" onclick="openLightbox('/images/${order.image_path.split(/[\\/]/).pop()}')">📷 點擊查看圖片</span>`
+              : `<span>${(order.raw_content || '-')}</span>`
+            }
+          </div>
+          <table class="items-table">
+            <thead>
+              <tr><th>商品</th><th>數量</th><th>單價</th><th style="width:120px"></th></tr>
+            </thead>
+            <tbody>
+              ${order.items.map(item => renderItem(item)).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
     `).join('');
   }
 
+  function renderItem(item) {
+    return `<tr id="item-row-${item.id}">
+      <td id="item-product-${item.id}">${item.product || '-'}</td>
+      <td id="item-quantity-${item.id}">${item.quantity || '-'}</td>
+      <td>${item.price > 0 ? '$' + item.price : '-'}</td>
+      <td><button class="btn btn-outline" style="padding:4px 10px;font-size:12px" onclick="startEdit(${item.id}, '${(item.product||'').replace(/'/g,"\\'")}', '${item.quantity||''}')">編輯</button></td>
+    </tr>`;
+  }
+
+  function startEdit(itemId, product, quantity) {
+    editingItemId = itemId;
+    document.getElementById(`item-product-${itemId}`).innerHTML  = `<input class="edit-input" id="edit-product-${itemId}" value="${product}" />`;
+    document.getElementById(`item-quantity-${itemId}`).innerHTML = `<input class="edit-input" id="edit-qty-${itemId}" value="${quantity}" style="width:80px"/>`;
+    document.querySelector(`#item-row-${itemId} td:last-child`).innerHTML = `
+      <div class="edit-actions">
+        <button class="btn btn-save"   onclick="saveEdit(${itemId})">儲存</button>
+        <button class="btn btn-cancel" onclick="loadOrders()">取消</button>
+      </div>`;
+  }
+
+  async function saveEdit(itemId) {
+    const product  = document.getElementById(`edit-product-${itemId}`).value.trim();
+    const quantity = document.getElementById(`edit-qty-${itemId}`).value.trim();
+    await fetch(`/api/order-items/${itemId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ product, quantity }),
+    });
+    showToast('已儲存');
+    loadOrders();
+  }
+
+  async function toggleShipped(orderId, checkbox) {
+    await fetch(`/api/orders/${orderId}/shipped`, { method: 'PATCH' });
+    showToast(checkbox.checked ? '已標記出貨' : '已取消出貨');
+    loadOrders();
+  }
+
+  function toggleCard(orderId) {
+    document.getElementById(`card-${orderId}`).classList.toggle('open');
+  }
+
+  // --- Unrecognized ---
   async function loadUnrecognized() {
     const res  = await fetch('/api/unrecognized');
     const data = await res.json();
@@ -242,18 +376,21 @@
         <td><span class="badge badge-blue">${r.group_name || '-'}</span></td>
         <td>${r.user_name || '-'}</td>
         <td><span class="badge ${r.type === 'image' ? 'badge-green' : 'badge-gray'}">${r.type === 'image' ? '圖片' : '文字'}</span></td>
-        <td class="raw-msg">${r.content || '[圖片檔案]'}</td>
+        <td>
+          ${r.type === 'image' && r.image_path
+            ? `<span class="img-link" onclick="openLightbox('/images/${r.image_path.split(/[\\/]/).pop()}')">📷 查看圖片</span>`
+            : (r.content || '-')}
+        </td>
       </tr>
     `).join('');
   }
 
-  // 初始載入
+  // --- Init ---
+  loadFilterOptions();
   loadOrders();
-
-  // 每 30 秒自動刷新
   setInterval(() => {
-    const activePage = document.querySelector('.page.active').id;
-    if (activePage === 'orders') loadOrders();
+    const active = document.querySelector('.page.active').id;
+    if (active === 'orders') loadOrders();
     else loadUnrecognized();
   }, 30000);
 </script>

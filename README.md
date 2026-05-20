@@ -33,7 +33,6 @@ LINE message → keyword filter → Claude Haiku (JSON) → orders.csv
 ---
 
 ### v2 — SQLite + Frontend + Image Support
-**Branch:** `master` (current)
 
 **Architecture:**
 ```
@@ -68,10 +67,36 @@ LINE message (text or image)
 
 ---
 
-### v3 — Planned
-> In progress
+### v3 — Order Management UI (current)
 
-TBD — polish and enhancements based on v2 real-world testing.
+**Architecture:**
+```
+LINE message (text or image)
+  ├── saved to raw_messages (SQLite) — 100% backup
+  └── Claude Haiku (text) / Claude Sonnet Vision (image)
+        └── returns array → one order (order_no) + multiple order_items
+```
+
+**Database schema changes:**
+- `orders` table now represents one order per message, with `order_no` and `shipped` fields
+- New `order_items` table — one row per product line within an order
+- `order_no` format: `ORD-YYYYMMDD-XXXX` (sequential per day)
+
+**Features:**
+- Order number assigned to every confirmed order
+- Collapsible order cards — click to expand and see individual items
+- Inline editing of product name and quantity per item
+- Shipped / pending toggle with live stats (total / customers / shipped / pending)
+- Customer and group dropdown filters (dynamically populated from DB)
+- Image orders open in a lightbox on click
+- Unrecognized messages tab preserved for manual review
+
+**Files changed:**
+| File | Change |
+|------|--------|
+| `db.js` | Rewritten — 3-table schema, `insertOrder` with items, `updateOrderItem`, `toggleShipped`, `getFilterOptions` |
+| `index.js` | New REST endpoints: `PUT /api/order-items/:id`, `PATCH /api/orders/:id/shipped`, `GET /api/filters` |
+| `public/index.html` | Rewritten — card layout, inline edit, lightbox, dropdown filters |
 
 ---
 
