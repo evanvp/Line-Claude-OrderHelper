@@ -11,6 +11,7 @@
     "@anthropic-ai/sdk": "^0.95.2",
     "@line/bot-sdk": "^11.0.0",
     "anthropic": "^0.0.0",
+    "better-sqlite3": "^12.10.0",
     "csv-writer": "^1.6.0",
     "dotenv": "^17.4.2",
     "express": "^5.2.1"

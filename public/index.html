@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>訂單管理系統</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f4f6f9; color: #333; }
+
+    header {
+      background: linear-gradient(135deg, #06c755, #00a041);
+      color: white; padding: 16px 24px;
+      display: flex; align-items: center; gap: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    header h1 { font-size: 20px; font-weight: 600; }
+
+    nav { display: flex; gap: 0; padding: 0 24px; background: white; border-bottom: 1px solid #e0e0e0; }
+    nav button {
+      padding: 12px 20px; border: none; background: none; cursor: pointer;
+      font-size: 14px; color: #666; border-bottom: 3px solid transparent;
+    }
+    nav button.active { color: #06c755; border-bottom-color: #06c755; font-weight: 600; }
+
+    .container { padding: 24px; max-width: 1200px; margin: 0 auto; }
+
+    .filters {
+      display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: flex-end;
+    }
+    .filters label { font-size: 12px; color: #888; display: flex; flex-direction: column; gap: 4px; }
+    .filters input {
+      padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px;
+      font-size: 14px; outline: none;
+    }
+    .filters input:focus { border-color: #06c755; }
+    .btn {
+      padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;
+      font-size: 14px; font-weight: 500;
+    }
+    .btn-primary { background: #06c755; color: white; }
+    .btn-primary:hover { background: #00a041; }
+    .btn-outline { background: white; color: #06c755; border: 1px solid #06c755; }
+    .btn-outline:hover { background: #f0fdf4; }
+
+    .stats {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px; margin-bottom: 24px;
+    }
+    .stat-card {
+      background: white; border-radius: 10px; padding: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08); text-align: center;
+    }
+    .stat-card .num { font-size: 28px; font-weight: 700; color: #06c755; }
+    .stat-card .label { font-size: 12px; color: #888; margin-top: 4px; }
+
+    table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    thead { background: #f8f9fa; }
+    th { padding: 12px 16px; text-align: left; font-size: 13px; color: #888; font-weight: 500; }
+    td { padding: 12px 16px; font-size: 14px; border-top: 1px solid #f0f0f0; }
+    tr:hover td { background: #fafffe; }
+
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 12px;
+      font-size: 12px; font-weight: 500;
+    }
+    .badge-green { background: #dcfce7; color: #16a34a; }
+    .badge-gray  { background: #f3f4f6; color: #6b7280; }
+    .badge-blue  { background: #dbeafe; color: #1d4ed8; }
+
+    .raw-msg {
+      max-width: 200px; overflow: hidden; text-overflow: ellipsis;
+      white-space: nowrap; color: #888; font-size: 13px; cursor: pointer;
+    }
+    .raw-msg:hover { color: #333; white-space: normal; }
+
+    .empty { text-align: center; padding: 60px; color: #aaa; }
+    .empty svg { width: 48px; height: 48px; margin-bottom: 12px; }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    #toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: #333; color: white; padding: 12px 20px;
+      border-radius: 8px; font-size: 14px; opacity: 0;
+      transition: opacity 0.3s; pointer-events: none;
+    }
+    #toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<header>
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-5 14H4v-2h11v2zm5-4H4v-2h16v2zm0-4H4V8h16v2z"/></svg>
+  <h1>LINE 訂單管理系統</h1>
+</header>
+
+<nav>
+  <button class="active" onclick="switchTab('orders', this)">訂單列表</button>
+  <button onclick="switchTab('unrecognized', this)">未辨識訊息</button>
+</nav>
+
+<div class="container">
+
+  <!-- 訂單列表 -->
+  <div id="orders" class="page active">
+    <div class="stats">
+      <div class="stat-card"><div class="num" id="stat-total">-</div><div class="label">總訂單數</div></div>
+      <div class="stat-card"><div class="num" id="stat-customers">-</div><div class="label">顧客人數</div></div>
+      <div class="stat-card"><div class="num" id="stat-products">-</div><div class="label">商品種類</div></div>
+    </div>
+
+    <div class="filters">
+      <label>搜尋顧客 / 商品
+        <input type="text" id="search" placeholder="輸入關鍵字..." />
+      </label>
+      <label>開始日期
+        <input type="date" id="from" />
+      </label>
+      <label>結束日期
+        <input type="date" id="to" />
+      </label>
+      <button class="btn btn-primary" onclick="loadOrders()">查詢</button>
+      <button class="btn btn-outline" onclick="clearFilters()">清除</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>日期</th>
+          <th>群組</th>
+          <th>顧客</th>
+          <th>商品</th>
+          <th>數量</th>
+          <th>單價</th>
+          <th>原始訊息</th>
+        </tr>
+      </thead>
+      <tbody id="orders-body">
+        <tr><td colspan="7" class="empty">載入中...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 未辨識訊息 -->
+  <div id="unrecognized" class="page">
+    <p style="color:#888; margin-bottom:16px; font-size:14px;">以下訊息 Claude 未判斷為訂單，請人工確認是否有漏單。</p>
+    <table>
+      <thead>
+        <tr>
+          <th>日期</th>
+          <th>群組</th>
+          <th>發話者</th>
+          <th>類型</th>
+          <th>內容</th>
+        </tr>
+      </thead>
+      <tbody id="unrecognized-body">
+        <tr><td colspan="5" class="empty">載入中...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+  function switchTab(id, btn) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    btn.classList.add('active');
+    if (id === 'unrecognized') loadUnrecognized();
+    else loadOrders();
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  function clearFilters() {
+    document.getElementById('search').value = '';
+    document.getElementById('from').value = '';
+    document.getElementById('to').value = '';
+    loadOrders();
+  }
+
+  async function loadOrders() {
+    const search = document.getElementById('search').value;
+    const from   = document.getElementById('from').value;
+    const to     = document.getElementById('to').value;
+    const params = new URLSearchParams();
+    if (search) params.set('search', search);
+    if (from)   params.set('from', from);
+    if (to)     params.set('to', to);
+
+    const res  = await fetch('/api/orders?' + params);
+    const data = await res.json();
+
+    const tbody = document.getElementById('orders-body');
+    if (!data.length) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty">目前沒有訂單資料</td></tr>';
+      document.getElementById('stat-total').textContent = 0;
+      document.getElementById('stat-customers').textContent = 0;
+      document.getElementById('stat-products').textContent = 0;
+      return;
+    }
+
+    document.getElementById('stat-total').textContent = data.length;
+    document.getElementById('stat-customers').textContent = new Set(data.map(r => r.customer)).size;
+    document.getElementById('stat-products').textContent = new Set(data.map(r => r.product)).size;
+
+    tbody.innerHTML = data.map(r => `
+      <tr>
+        <td>${r.created_at}</td>
+        <td><span class="badge badge-blue">${r.group_name || '-'}</span></td>
+        <td>${r.customer || '-'}</td>
+        <td>${r.product || '-'}</td>
+        <td>${r.quantity || '-'}</td>
+        <td>${r.price > 0 ? '$' + r.price : '-'}</td>
+        <td><span class="raw-msg" title="${(r.raw_content || '').replace(/"/g, '&quot;')}">${r.raw_content || '[圖片]'}</span></td>
+      </tr>
+    `).join('');
+  }
+
+  async function loadUnrecognized() {
+    const res  = await fetch('/api/unrecognized');
+    const data = await res.json();
+    const tbody = document.getElementById('unrecognized-body');
+    if (!data.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty">沒有未辨識的訊息，太棒了！</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map(r => `
+      <tr>
+        <td>${r.created_at}</td>
+        <td><span class="badge badge-blue">${r.group_name || '-'}</span></td>
+        <td>${r.user_name || '-'}</td>
+        <td><span class="badge ${r.type === 'image' ? 'badge-green' : 'badge-gray'}">${r.type === 'image' ? '圖片' : '文字'}</span></td>
+        <td class="raw-msg">${r.content || '[圖片檔案]'}</td>
+      </tr>
+    `).join('');
+  }
+
+  // 初始載入
+  loadOrders();
+
+  // 每 30 秒自動刷新
+  setInterval(() => {
+    const activePage = document.querySelector('.page.active').id;
+    if (activePage === 'orders') loadOrders();
+    else loadUnrecognized();
+  }, 30000);
+</script>
+</body>
+</html>
